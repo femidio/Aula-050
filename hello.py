@@ -2,12 +2,10 @@ from flask import Flask, render_template, session, redirect, url_for, flash, req
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired
-from markupsafe import Markup
-import socket
-import os
-from werkzeug.user_agent import UserAgent
+from datetime import datetime
+from flask_moment import Moment
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
@@ -17,11 +15,10 @@ moment = Moment(app)
 
 
 class NameForm(FlaskForm):
-    name = StringField('What is your first name?', validators=[DataRequired()])
-    sobrenome = StringField('What is your last name?', validators=[DataRequired()])
-    prontuario = StringField('What is your student ID?', validators=[DataRequired()])
-    instituicao = StringField('What is your institution?', validators=[DataRequired()])
-    discipline = StringField('What is your discipline name?', validators=[DataRequired()])
+    name = StringField('Informe o seu nome', validators=[DataRequired()])
+    surname = StringField('Informe o seu sobrenome:', validators=[DataRequired()])
+    institution = StringField('Informe a sua Insituição de ensino:', validators=[DataRequired()])
+    discipline = SelectField(u'Informe a sua disciplina:', choices=[('dswa5', 'DSWA5'), ('dwba4', 'DWBA4'), ('GPSA5', 'Gestão de projetos')])
     submit = SubmitField('Submit')
 
 
@@ -41,13 +38,24 @@ def index():
     if form.validate_on_submit():
         old_name = session.get('name')
         if old_name is not None and old_name != form.name.data:
-            flash('Looks like you have changed your name!')
+            flash('Você alterou o seu nome!')
         session['name'] = form.name.data
-        session['sobrenome'] = form.sobrenome.data
-        session['prontuario'] = form.prontuario.data
-        session['instituicao'] = form.instituicao.data
+        session['surname'] = form.surname.data
+        session['institution'] = form.institution.data
         session['discipline'] = form.discipline.data
+        session['remote_addr'] = request.remote_addr;
+        session['host'] = request.host;
         return redirect(url_for('index'))
-    ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
-    user_agent = UserAgent(request.headers.get('User-Agent'))
-    return render_template('index.html', form=form, name=session.get('name'), sobrenome=session.get('sobrenome'), prontuario=session.get('prontuario'), instituicao=session.get('instituicao'), discipline=session.get('discipline'), ip=ip, user_agent=user_agent)
+    
+    return render_template('index.html', 
+                           form=form, 
+                           name=session.get('name'), 
+                           surname=session.get('surname'),
+                           institution=session.get('institution'),
+                           discipline=session.get('discipline'),
+                           choices=dict(form.discipline.choices),
+                           remote_addr=session.get('remote_addr'),
+                           remote_host=session.get('host'),
+                           current_time=datetime.utcnow())
+                           
+                           
